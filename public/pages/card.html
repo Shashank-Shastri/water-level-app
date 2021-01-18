@@ -1,0 +1,35 @@
+<div
+  class="card"
+>
+  <div class="card-header text-center">
+    <div
+      ng-if="1==2"
+      class="alert ng-class: $ctrl.building.alert.type; alert-dismissible fade show"
+      role="alert"
+    >
+      {{$ctrl.building.alert.text}}
+    </div>
+    {{$ctrl.building.tank}}
+  </div>
+  <div class="card-body text-center">
+    <div
+      class="progress ng-binding"
+      bootstrap-tooltip
+      data-toggle="tooltip"
+      title="Last Updated: {{$ctrl.building.date + ' at ' + $ctrl.building.time}}"
+    >
+      <div
+        class="progress-bar progress-bar-striped bg-info-dark"
+        ng-class="[{'progress-bar-animated': $ctrl.building.filling}, {'bg-danger': $ctrl.building.overflow},{'bg-success': $ctrl.building.level >= 75 && !$ctrl.building.overflow},{'bg-warning': $ctrl.building.level < 25 && !$ctrl.building.overflow}]"
+        ng-style="{width: $ctrl.building.level+'%'}"
+        role="progressbar"
+        aria-valuenow="55"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        {{$ctrl.building.level}}%
+      </div>
+    </div>
+  </div>
+</div>
+<br />
