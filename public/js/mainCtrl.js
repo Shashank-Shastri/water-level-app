@@ -8,38 +8,52 @@ $(document).ready(function () {
     let myApp = angular.module('myApp', ['firebase']);
     myApp.controller('MainCtrl', function ($rootScope, $firebaseObject) {
         let app = this;
-        let databaseRef = firebase.database().ref('water-tank-info/current');
-        app.buildings = {};
+        let ref = firebase.database().ref('water-tank-info/current');
+        let buildings = {};
         app.noOfBuildings = 0;
-        app.data = $firebaseObject(databaseRef);
-        app.data.$loaded().then(data => {
-            angular.forEach(data, (building, key) => {
-                app.noOfBuildings++;
-                let dateObj = moment(new Date(building.timestamp));
-                app.buildings[building.tank] = building;
-                app.buildings[building.tank].identifier = key;
-                app.buildings[building.tank].alert = {
-                    type: building.overflow
-                        ? 'alert-danger'
-                        : building.level < 25
-                        ? 'alert-warning'
-                        : building.filling
-                        ? 'alert-primary'
-                        : '',
-                    text: building.overflow
-                        ? 'Tank is about to Overflow.'
-                        : building.level < 25
-                        ? 'Water is less than 25%.'
-                        : building.filling
-                        ? 'Tank is filling up.'
-                        : ''
+        ref.on('value', 
+            function (snap) {
+                for (const [key, building] of Object.entries(snap.val())) {
+                    app.noOfBuildings++;
+                    let date_obj = new Date(building.timestamp);
+                    buildings[building.tank] = building;
+                    buildings[building.tank].identifier = key;
+                    buildings[building.tank].alert = {
+                        type: building.overflow
+                            ? 'alert-danger'
+                            : building.level < 25
+                            ? 'alert-warning'
+                            : building.filling
+                            ? 'alert-primary'
+                            : '',
+                        text: building.overflow
+                            ? 'Tank is about to Overflow.'
+                            : building.level < 25
+                            ? 'Water is less than 25%.'
+                            : building.filling
+                            ? 'Tank is filling up.'
+                            : ''
+                    };
+                    buildings[building.tank].date = date_obj.toLocaleDateString();
+                    buildings[building.tank].time = date_obj.toLocaleTimeString(
+                        'en-US',
+                        {
+                            hour: 'numeric',
+                            hour12: true,
+                            minute: 'numeric',
+                            second: 'numeric'
+                        }
+                    );
                 };
-                app.buildings[building.tank].date = dateObj.format('DD/M/YYYY');
-                app.buildings[building.tank].time = dateObj.format('h:mm:ss A');
-            });
-            $rootScope.$emit('Data Updated', app.buildings);
-        });
-        app.showModal = building => $rootScope.$emit('Show Modal', building);
+                $rootScope.$emit('Data Updated', buildings);
+            },
+            function (errorObject) {
+                console.log('The read failed: ' + errorObject.code);
+            }
+        );
+        this.buildings = buildings;
+        this.showModal = building => $rootScope.$emit('Show Modal', building);
+        this.data = $firebaseObject(ref);
     });
 
     myApp.component('cardDetail', {
