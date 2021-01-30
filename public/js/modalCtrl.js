@@ -24,28 +24,21 @@ myApp.controller('ModalCtrl', function ($scope, $rootScope, $firebaseArray) {
             else if(modalData.chart.type === 'Yearly') dataPath = modalData.chart.year;
             let databaseRef = firebase.database().ref(`water-tank-info/historical/${modalData.building.identifier}/${dataPath}`);
             modalData.historicalData = $firebaseArray(databaseRef);
-            modalData.historicalData.$loaded().then(() => {
+            modalData.historicalData.$loaded().then(data => {
                 const loopNestedObj = obj => {
-                    Object.keys(obj).forEach(key => {
-                    if (obj[key] && typeof obj[key] === "object") loopNestedObj(obj[key]); // recurse.
-                    if(key === 'timestamp') {
-                        let date_obj = new Date(obj[key]);
-                        modalData.chart.timestamp.push(
-                            date_obj.toLocaleDateString() + " \n" +
-                            date_obj.toLocaleTimeString("en-US", {
-                                hour: "numeric",
-                                hour12: true,
-                                minute: "numeric",
-                                second: "numeric",
-                            })
-                        );
-                    }
-                    if(key === 'volume') {
-                        modalData.chart.volume.push(obj[key]);
-                    }
+                    angular.forEach(obj, (value, key) => {
+                        if (value && typeof value === "object") loopNestedObj(value); // recurse.
+                        if(key === 'timestamp') {
+                            let dateObj = moment(new Date(value));
+                            modalData.chart.timestamp.push(
+                                dateObj.format('DD/M/YYYY') + " \n" +
+                                dateObj.format('h:mm:ss A')
+                            );
+                        }
+                        if(key === 'volume') modalData.chart.volume.push(value);
                     });
                 };
-                loopNestedObj(modalData.historicalData);
+                loopNestedObj(data);
                 if(myChart) myChart.destroy();
                 myChart = new Chart($("#myChart"), {
                 type: "line",
@@ -84,8 +77,8 @@ myApp.controller('ModalCtrl', function ($scope, $rootScope, $firebaseArray) {
             maxViewMode: 2,
             weekStart: 1,
             title: type,
-            //startDate: '18/01/2021',
-            //endDate: '0d',
+            startDate: '19/01/2021',
+            endDate: '0d',
             format: 'dd/m/yyyy',
             todayBtn: 'linked',
             autoclose: true,
