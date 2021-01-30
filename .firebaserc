@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "water-level-f93c4"
+  },
+  "targets": {
+    "water-level-f93c4": {
+      "hosting": {
+        "dev": [
+          "water-level-f93c4"
+        ],
+        "prod": [
+          "water-level"
+        ]
+      }
+    }
+  }
+}
