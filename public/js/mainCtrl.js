@@ -15,7 +15,7 @@ $(document).ready(function () {
             function (snap) {
                 for (const [key, building] of Object.entries(snap.val())) {
                     app.noOfBuildings++;
-                    let date_obj = new Date(building.timestamp);
+                    let dateObj = moment(new Date(building.timestamp));
                     buildings[building.tank] = building;
                     buildings[building.tank].identifier = key;
                     buildings[building.tank].alert = {
@@ -34,16 +34,8 @@ $(document).ready(function () {
                             ? 'Tank is filling up.'
                             : ''
                     };
-                    buildings[building.tank].date = date_obj.toLocaleDateString();
-                    buildings[building.tank].time = date_obj.toLocaleTimeString(
-                        'en-US',
-                        {
-                            hour: 'numeric',
-                            hour12: true,
-                            minute: 'numeric',
-                            second: 'numeric'
-                        }
-                    );
+                    buildings[building.tank].date = dateObj.format('DD/M/YYYY');
+                    buildings[building.tank].time = dateObj.format('h:mm:ss A');
                 };
                 $rootScope.$emit('Data Updated', buildings);
             },
