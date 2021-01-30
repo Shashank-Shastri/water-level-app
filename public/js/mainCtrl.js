@@ -6,46 +6,88 @@ $(document).ready(function () {
     ('use strict');
 
     let myApp = angular.module('myApp', ['firebase']);
-    myApp.controller('MainCtrl', function ($rootScope, $firebaseObject) {
+
+    myApp.factory('UserService', function () {
+        let user = {
+            name: '',
+            uid: '',
+            loggedIn: false,
+            superUser: false
+        };
+        let options = {
+            updateUser: (name, uid, loggedIn, superUser) =>
+                (user = { name, uid, loggedIn, superUser }),
+            getUser: () => user
+        };
+        return options;
+    });
+
+    myApp.controller('AuthService', function (UserService) {
+        let auth = this;
+        auth.user = UserService.getUser();
+        auth.signIn = () => {
+            firebase
+                .auth()
+                .signInWithEmailAndPassword(auth.email, auth.password)
+                .then(({ user }) => {
+                    UserService.updateUser(auth.email, user.uid, true, true);
+                    auth.user = UserService.getUser();
+                    console.debug(auth.user);
+                })
+                .catch((e) => console.debug(e));
+        };
+        auth.signOut = () => {
+            firebase.auth().signOut();
+            UserService.updateUser('', '', false, false);
+            auth.user = UserService.getUser();
+            console.debug(auth.user);
+        };
+    });
+
+    myApp.controller('MainCtrl', function ($rootScope, $firebaseObject, UserService) {
         let app = this;
+        let { name, loggedIn } = UserService.getUser();
         let ref = firebase.database().ref('water-tank-info/current');
         let buildings = {};
         app.noOfBuildings = 0;
-        ref.on('value', 
-            function (snap) {
-                for (const [key, building] of Object.entries(snap.val())) {
-                    app.noOfBuildings++;
-                    let dateObj = moment(new Date(building.timestamp));
-                    buildings[building.tank] = building;
-                    buildings[building.tank].identifier = key;
-                    buildings[building.tank].alert = {
-                        type: building.overflow
-                            ? 'alert-danger'
-                            : building.level < 25
-                            ? 'alert-warning'
-                            : building.filling
-                            ? 'alert-primary'
-                            : '',
-                        text: building.overflow
-                            ? 'Tank is about to Overflow.'
-                            : building.level < 25
-                            ? 'Water is less than 25%.'
-                            : building.filling
-                            ? 'Tank is filling up.'
-                            : ''
-                    };
-                    buildings[building.tank].date = dateObj.format('DD/M/YYYY');
-                    buildings[building.tank].time = dateObj.format('h:mm:ss A');
-                };
-                $rootScope.$emit('Data Updated', buildings);
-            },
-            function (errorObject) {
-                console.log('The read failed: ' + errorObject.code);
-            }
-        );
-        this.buildings = buildings;
-        this.showModal = building => $rootScope.$emit('Show Modal', building);
-        this.data = $firebaseObject(ref);
+        if(loggedIn) {
+            ref.on(
+                'value',
+                function (snap) {
+                    for (const [key, building] of Object.entries(snap.val())) {
+                        app.noOfBuildings++;
+                        let dateObj = moment(new Date(building.timestamp));
+                        buildings[building.tank] = building;
+                        buildings[building.tank].identifier = key;
+                        buildings[building.tank].alert = {
+                            type: building.overflow
+                                ? 'alert-danger'
+                                : building.level < 25
+                                ? 'alert-warning'
+                                : building.filling
+                                ? 'alert-primary'
+                                : '',
+                            text: building.overflow
+                                ? 'Tank is about to Overflow.'
+                                : building.level < 25
+                                ? 'Water is less than 25%.'
+                                : building.filling
+                                ? 'Tank is filling up.'
+                                : ''
+                        };
+                        buildings[building.tank].date = dateObj.format('DD/M/YYYY');
+                        buildings[building.tank].time = dateObj.format('h:mm:ss A');
+                    }
+                    $rootScope.$emit('Data Updated', buildings);
+                },
+                function (errorObject) {
+                    console.log('The read failed: ' + errorObject.code);
+                }
+            );
+            app.buildings = buildings;
+            app.showModal = (building) => $rootScope.$emit('Show Modal', building);
+            app.data = $firebaseObject(ref);
+        }
     });
 
     myApp.component('cardDetail', {
@@ -71,7 +113,7 @@ $(document).ready(function () {
     });
 })(window.angular);
 
-validate = email => {
+validate = (email) => {
     let mailFormat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     if (!email.match(mailFormat)) {
         document.getElementById('invalid').innerHTML =
@@ -81,7 +123,7 @@ validate = email => {
         document.getElementById('invalid').innerHTML = '';
         return 1;
     }
-}
+};
 
 feedBack = () => {
     let Name = $('#name').val();
@@ -94,4 +136,20 @@ feedBack = () => {
         $('#feedback-submitted').modal('show');
         $('.btn-danger').click();
     }
+};
+
+feedback = () => {
+    document.title = 'Feedback | Water Tank Level Automation';
+    $('#Feedback').removeClass('hide');
+    $('#Dash').addClass('hide');
+    $('#login').addClass('hide');
+    $('#navbarResponsive').removeClass('show');
+};
+
+dash = () => {
+    document.title = 'Dashboard | Water Tank Level Automation';
+    $('#Dash').removeClass('hide');
+    $('#login').removeClass('hide');
+    $('#Feedback').addClass('hide');
+    $('#navbarResponsive').removeClass('show');
 };
